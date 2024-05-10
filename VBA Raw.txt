@@ -1,0 +1,114 @@
+'Button macro
+Private Sub CommandButton1_Click()
+UpdateMarkups
+End Sub
+
+Private Sub UpdateMarkups()
+'Optimize Macro Speed
+Application.ScreenUpdating = False
+
+Dim revuPath As String
+Dim revuScript As String
+Dim bScriptFile As String
+Dim filePath As String
+Dim command As String
+
+Dim colVal As String
+Dim customColStr As String
+Dim script As String
+Dim dblQ As String
+
+Dim mID As String
+Dim mPg As String
+
+Dim lRow As Integer
+Dim lCol As Integer
+Dim pgCol As Integer
+
+Dim defaultProperties As Variant
+
+dblQ = Chr(34) 'Double Quote Character
+
+'Default Properties which can't be updated with this method. Use MarkupSet to update these properties via the Script Engine
+defaultProperties = Array("Parent", "Subject Comments", "Page Index", "Lock", "Status", "Checkmark", "Author", "Date", "Creation Date", "Depth", "Depth Unit", "Rise/Drop", "Rise/Drop Unit", "Slope", "Color", "X", "Y", "X Center", "Y Center", "Document Width", "Document Height", "Length", "Length Unit", "Width", "Width Unit", "Height", "Height Unit", "Area", "Area Unit", "Wall Area", "Wall Area Unit", "Volume", "Volume Unit", "Count", "Measurement", "Measurement Unit", "Unit", "Label", "Sequence", "3D View", "Layer", "Legend", "Space", "Capture", "Page Label", "File Name")
+
+'Script Engine File. Should be C:\Program Files\Bluebeam Software\Bluebeam Revu\21\Revu\ScriptEngine.exe
+revuPath = Worksheets("Sheet1").Cells(1, 1).Value 'Cell A1
+
+'The BCI file that is fed into the engine. It is the same as a text file
+bScriptFile = Worksheets("Sheet1").Cells(2, 1).Value 'Cell A2
+
+'Shell command that directs script engine to run the BCI file
+command = revuPath & " Script('" & bScriptFile & "')"
+
+'The full filepath and file name with .pdf extension
+filePath = Worksheets("Sheet1").Cells(3, 1).Value 'Cell A3
+
+'Copy Bluebeam markup export to a sheet named Import
+lRow = Worksheets("Import").Cells(Rows.Count, 1).End(xlUp).Row
+lCol = Worksheets("Import").Cells(1, Columns.Count).End(xlToLeft).Column
+
+pgCol = Application.Match("Page Index", Worksheets("Import").Rows(1), 0)
+
+'Script to be written to the BCI file
+script = "Open('" & filePath & "', '')"
+'Loop through all of import
+For i = 2 To lRow
+    
+    mID = Worksheets("Import").Cells(i, 1).Value
+    mPg = Worksheets("Import").Cells(i, pgCol).Value
+    colVal = ""
+    customColStr = ""
+    
+    'loop through all values across all columns
+    For j = 2 To lCol
+        'if cell is not empty
+        If Not IsEmpty(WorksheetFunction.IfError(Worksheets("Import").Cells(i, j).Value, "")) And WorksheetFunction.IfError(Worksheets("Import").Cells(i, j).Value, "") <> "" Then
+            'and isn't a default property
+            If Not IsInArray(Worksheets("Import").Cells(1, j).Value, defaultProperties) Then
+                'remove any instances of ' and " as the Script Engine cannot process those values without breaking. Can replace with ft/in, deg, or leave blank as I've done
+                colVal = Replace(Replace(Worksheets("Import").Cells(i, j).Value, dblQ, ""), "'", "")
+                'then add value to custom column update list
+                customColStr = customColStr & "'" & Worksheets("Import").Cells(1, j).Value & "':'" & colVal & "',"
+            End If
+        End If
+    Next j
+    
+    'Remove end comma
+    If customColStr <> "" Then
+        customColStr = Left(customColStr, Len(customColStr) - 1)
+    End If
+
+    script = script & " ColumnDataSet(" & mPg & "," & dblQ & mID & dblQ & "," & dblQ & "{" & customColStr & "}" & dblQ & ")"
+
+Next i
+
+script = script & " Save() Close()"
+
+Open bScriptFile For Output As #1
+    Print #1, script
+    Close #1
+    
+WaitFor 4
+'run shell command
+Shell command, vbHide
+
+Application.ScreenUpdating = True
+MsgBox "Update Markups Complete"
+
+End Sub
+
+Function IsInArray(stringToBeFound As String, arr As Variant) As Boolean
+  IsInArray = (UBound(Filter(arr, stringToBeFound)) > -1)
+End Function
+
+Sub WaitFor(NumOfSeconds As Single)
+    Dim SngSec As Single
+    SngSec = Timer + NumOfSeconds
+
+    Do While Timer < SngSec
+        DoEvents
+   Loop
+End Sub
+
+

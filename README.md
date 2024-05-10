@@ -6,4 +6,4 @@ This process works by writing all of the new markup data to a BCI file, which is
 
 To run this program, the user must export a markup list CSV file with custom columns showing in the Markup List. Then copy the contents of the CVS file into a sheet named "IMPORT". Update the custom column data with the new data you want to upload to BlueBeam. Then, on a sheet names "Sheet1", enter in Cell A1 the full folder path of the script engine (C:\Users\etc\Revu\ScriptEngine.exe). In Cell A2 enter the full folder path of the BCI file (C:\Users\etc\myScript.bci). In Cell A3 enter the full folder path of the target pdf (C:\Users\etc\target.pdf). Now run the VBA Subroutine UpdateMarkups to update the pdf with the new custom column data. 
 
-Make sure to Close the PDF before running this code! Otherwise the process will not work. 
+Close BlueBeam before running this code! Otherwise the process will not work. 
